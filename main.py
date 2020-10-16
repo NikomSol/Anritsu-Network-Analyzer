@@ -7,18 +7,20 @@ print(coms[0][0])
 
 ser = serial.Serial(
     # port=coms[0][0],
-    port="COM3",
-    baudrate=9600,
+    port="COM4",
+    baudrate=19200,
     parity=serial.PARITY_NONE,
     stopbits=serial.STOPBITS_ONE,
     bytesize=serial.EIGHTBITS
 )
+ser.Terminator = 'LF'
 print(ser.isOpen())
 
-ser.write(b'DF2?')
 
-time.sleep(0.3)
 
+ser.write(b'*IDN?\n')
+data = ''
+# data = ser.read()
 data = ser.readline()
 print('data is:',data)
 
