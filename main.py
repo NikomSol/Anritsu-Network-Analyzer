@@ -1,28 +1,49 @@
+import serial.tools.list_ports
 import serial
 import time
+import numpy as np
+import re
+import matplotlib.pyplot as plt
 
-import serial.tools.list_ports
 coms = list(serial.tools.list_ports.comports())
 print(coms[0][0])
 
+terminator_input = 'LF'
+
 ser = serial.Serial(
-    # port=coms[0][0],
-    port="COM4",
-    baudrate=19200,
+    port=coms[0][0],
+    baudrate=9600,
     parity=serial.PARITY_NONE,
     stopbits=serial.STOPBITS_ONE,
-    bytesize=serial.EIGHTBITS
+    bytesize=serial.EIGHTBITS,
+    timeout=0.1
 )
-ser.Terminator = 'LF'
+
 print(ser.isOpen())
 
+ser.flushInput()
+ser.flushOutput()
+# ser.write(b'ACCH? \n')
+flag = 1
+while flag:
+    flag = len(ser.readline())
+    # print(ser.readline().decode('utf-8') is '')
+print('clear')
 
+N = 1001
+data = np.zeros(N)
+ser.write(('XMA? 0, '+str(N)+' \n').encode('utf-8'))
+# ser.write(b'XMA? 0, 10 \n')
 
-ser.write(b'*IDN?\n')
-data = ''
-# data = ser.read()
-data = ser.readline()
-print('data is:',data)
+for i in range(N):
+    str = ser.readline()
+    # print(str)
+    if str is not b'':
+        data[i] = float(str.decode('utf-8'))
+# print(data)
 
 ser.close()
 print(ser.isOpen())
+
+plt.plot(data)
+plt.show()
