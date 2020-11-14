@@ -7,13 +7,16 @@ import re
 
 
 class Anritsu:
-    def __init__(self, serial):
-        self.ser = serial
+    # avoid names as modules
+    def __init__(self, _serial: serial.Serial):
+        self.ser = _serial
         self.sleep = 0.1
         self.clear_input()
 
+    # TODO parameters typing
     def set_freq(self, start, stop, log=True):
         ser = self.ser
+        # GEO: maybe isinstance? Or use typing as runtime check
         if ((type(start) is float) or (type(start) is int)) and ((type(stop) is float) or (type(stop) is int)) and (
                 stop > start):
             str_start = 'STF ' + str(start) + 'HZ'
@@ -42,6 +45,7 @@ class Anritsu:
 
         return start, stop, log
 
+    # TODO parameters typing
     def set_power(self, output_pow):
         ser = self.ser
         if 15 >= output_pow >= -6:
@@ -53,6 +57,7 @@ class Anritsu:
         time.sleep(self.sleep)
         return ser.readline()
 
+    # TODO parameters typing
     def set_poins(self, points):
         """
         N = [11, 21, 51, 101, 251, 501, 1001][MEP]
@@ -67,6 +72,7 @@ class Anritsu:
         time.sleep(self.sleep)
         return ser.readline()
 
+    # TODO parameters typing
     def set_RBW(self, RBW=13):
         """
         0: 3Hz
@@ -82,7 +88,7 @@ class Anritsu:
         10: 4kHz
         11: 5kHz
         12: 20kHz
-        13:AUTO
+        13: AUTO
         """
         if 0 <= RBW <= 13:
             ser = self.ser
@@ -94,7 +100,9 @@ class Anritsu:
         time.sleep(self.sleep)
         return ser.readline()
 
+    # TODO parameters typing
     def set_format(self, format, channel='all'):
+        # TODO spaces alignment?
         """
         0: LOGMAG
         1: PHASE
@@ -123,6 +131,7 @@ class Anritsu:
         ser = self.ser
         form1 = None
         form2 = None
+        # TODO () can be omitted
         if (channel is 'ch1') or (channel is 'all'):
             ser.write(b'ACCH 1 \n')
             ser.write(('TRC ' + str(format) + ' \n').encode('utf-8'))
@@ -137,7 +146,9 @@ class Anritsu:
             form2 = ser.readline()
         return form1, form2
 
+    # TODO parameters typing
     def set_meas(self, meas, channel='all'):
+        # TODO spaces alignment?
         """
         0:TB/TA
         1: TA/R
@@ -164,6 +175,7 @@ class Anritsu:
 
         return meas1, meas2
 
+    # TODO parameters typing
     def set_channel(self, channel='all'):
         ser = self.ser
         if channel is 'all':
@@ -177,6 +189,7 @@ class Anritsu:
         time.sleep(self.sleep)
         return ser.readline()
 
+    # TODO parameters typing
     def sweep(self, mode):
         ser = self.ser
         if mode is 'single':
@@ -186,6 +199,7 @@ class Anritsu:
         else:
             print('unknown sweep mode')
 
+    # TODO parameters typing
     def wait_sweep_stop(self):
         ser = self.ser
         sleep = self.sleep
@@ -193,15 +207,17 @@ class Anritsu:
         while flag:
             time.sleep(sleep)
             ser.write(b'SWP? \n')
-            if (ser.readline() == b'0\n'):
+            if ser.readline() == b'0\n':
                 flag = 0
 
+    # TODO parameters typing
     def clear_input(self):
         ser = self.ser
         flag = 1
         while flag:
             flag = len(ser.readline())
 
+    # TODO parameters typing
     def _get_data_N(self, N):
         time.sleep(self.sleep)
         ser = self.ser
@@ -212,6 +228,7 @@ class Anritsu:
                 data[i] = float(str.decode('utf-8'))
         return data
 
+    # TODO parameters typing
     def get_data(self, channel='all', plot=True, save=True):
         """
         only single mode

@@ -4,29 +4,29 @@ import logging
 import time
 
 
-class Myserial:
-    def __init__(self, setupfile=False, com=False, baud=9600, parity='NONE', stopbits=1, bytesize=8,
-                 timeout=0.1, answertime=0.1,
-                 terminator='LN', terminator_spase=True,
+class MySerial:
+    def __init__(self, setup_file=False,
+                 com=False, baud=9600, parity='NONE', stopbits=1, bytesize=8,
+                 timeout=0.1, answer_time=0.1,
+                 terminator='LN', terminator_space=True,
                  logging_message=True):
         """
-
-        :param setupfile:  filename:str if use serial setup from file or False if setup from code
+        :param setup_file:  filename:str if use serial setup from file or False if setup from code
         :param com: "COM X"  or False - auto finding free com
         :param baud: {19200,9600,4800,2400,1200}
         :param parity: {"NONE",}
         :param stopbits: {1,2}
         :param bytesize: {7,8}
         :param timeout: time wait answer
-        :param answertime: sleep time between write and read
+        :param answer_time: sleep time between write and read
         :param terminator: {'LN', 'CR', 'CRLN','LNCR'}
-        :param terminator_spase: {True, False} space before terminator
+        :param terminator_space: {True, False} space before terminator
         :param logging_message: {False, True, 'all'} 'all' if you want to logging multiline answers
         """
-        if setupfile:
-            com, baud, parity, stopbits, bitesize = self.get_settings_from_file(setupfile)
+        if setup_file:
+            com, baud, parity, stopbits, bitesize = self.get_settings_from_file(setup_file)
 
-        "Search all coms and use first"
+        # Search all coms and use first
         if not com:
             coms = list(serial.tools.list_ports.comports())
             try:
@@ -38,6 +38,7 @@ class Myserial:
         if baud not in {19200, 9600, 4800, 2400, 1200}:
             logging.ERROR('Unknown baud: ' + str(baud))
 
+        # GEO - really? Before setting all the settings as stopbits etc. ?
         try:
             ser = serial.Serial(
                 port=com,
@@ -48,11 +49,12 @@ class Myserial:
             logging.ERROR('Can not open serial')
             raise
 
-        if parity is "NONE":
+        if parity is 'NONE':
             ser.parity = serial.PARITY_NONE
         else:
             logging.ERROR('Unknown parity: ' + str(parity))
             raise ValueError
+
         if stopbits == 1:
             ser.stopbits = serial.STOPBITS_ONE
         elif stopbits == 2:
@@ -85,37 +87,39 @@ class Myserial:
             logging.ERROR('Unknown terminator: ' + str(terminator))
             raise ValueError
 
-        if terminator_spase:
+        if terminator_space:
             self.terminator = ' ' + self.terminator
 
-        self.answertime = answertime
+        self.answer_time = answer_time
         self.logging_message = logging_message
 
-    def get_settings_from_file(self, setupfile):
+    # TODO parameters typing
+    def get_settings_from_file(self, setup_file):
         """
-        todo
-        :param setupfile:
+        TODO
+        :param setup_file:
         :return:
         """
         try:
-            open(setupfile)
+            open(setup_file)
         except Exception:
             logging.ERROR('There is not settings serial file')
             raise
 
-    def close(self):
+    def close(self) -> None:
         ser = self.ser
         ser.close()
         assert not ser.isOpen()
         logging.INFO('Serial is close')
 
-    def write(self, message: str):
+    def write(self, message: str) -> None:
         ser = self.ser
         bmessage = (message + self.terminator).encode('unf-8')
         ser.write(bmessage)
         if self.logging_message:
             logging.INFO(b'serial write: ' + bmessage)
 
+    # TODO return parameter typing == str?
     def write_readline(self, message: str):
         ser = self.ser
         bmessage = (message + self.terminator).encode('unf-8')
@@ -123,15 +127,18 @@ class Myserial:
         if self.logging_message:
             logging.INFO(b'serial write: ' + bmessage)
 
-        time.sleep(self.answertime)
+        time.sleep(self.answer_time)
         answer = ser.readline()
         if self.logging_message:
             logging.INFO(b'serial read: ' + answer)
 
         return answer.decode('uts-8').rstrip('\n')
 
+    # TODO return parameter typing == str?
+    # TODO argument names should be lowercase
     def write_readlines(self, message: str, N: int = 0):
         """
+        :param message: TODO
         :param N: int - number of lines if 0 - read while not empty lines
         :return: list of str without '\n'
         """
@@ -142,7 +149,7 @@ class Myserial:
         if logging_message:
             logging.INFO(b'serial write: ' + bmessage)
 
-        time.sleep(self.answertime)
+        time.sleep(self.answer_time)
 
         if N:
             answer = N * []
@@ -165,7 +172,7 @@ class Myserial:
 
         return answer
 
-    def clear_input(self):
+    def clear_input(self) -> None:
         ser = self.ser
         logging_message = self.logging_message
         flag = 1

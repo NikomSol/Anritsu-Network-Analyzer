@@ -5,8 +5,11 @@ import time
 from anritsu import Anritsu
 import sys
 
+
 def excepthook(*args):
   logging.getLogger().error('Uncaught exception:', exc_info=args)
+
+
 logging.basicConfig(filename="INFO.log", level=logging.INFO, filemode='w')
 
 coms = list(serial.tools.list_ports.comports())
@@ -35,7 +38,7 @@ anr = Anritsu(ser)
 # anr.set_meas(5,channel = 'ch2')
 
 anr.sweep('single')
-anr.get_data(channel='all',plot=True,save=True)
+anr.get_data(channel='all', plot=True, save=True)
 
 ser.close()
 print(ser.isOpen())
