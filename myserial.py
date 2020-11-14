@@ -5,14 +5,28 @@ import time
 
 
 class Myserial:
-    def __init__(self, file=False, com=False, baud=9600, parity='NONE', stopbits=1, bytesize=8,
+    def __init__(self, setupfile=False, com=False, baud=9600, parity='NONE', stopbits=1, bytesize=8,
                  timeout=0.1, answertime=0.1,
                  terminator='LN', terminator_spase=True,
-                 logging_massage='single'):
+                 logging_message=True):
+        """
 
-        if file:
-            com, baud, parity, stopbits, bitesize = self.get_settings_from_file(file)
+        :param setupfile:  filename:str if use serial setup from file or False if setup from code
+        :param com: "COM X"  or False - auto finding free com
+        :param baud: {19200,9600,4800,2400,1200}
+        :param parity: {"NONE",}
+        :param stopbits: {1,2}
+        :param bytesize: {7,8}
+        :param timeout: time wait answer
+        :param answertime: sleep time between write and read
+        :param terminator: {'LN', 'CR', 'CRLN','LNCR'}
+        :param terminator_spase: {True, False} space before terminator
+        :param logging_message: {False, True, 'all'} 'all' if you want to logging multiline answers
+        """
+        if setupfile:
+            com, baud, parity, stopbits, bitesize = self.get_settings_from_file(setupfile)
 
+        "Search all coms and use first"
         if not com:
             coms = list(serial.tools.list_ports.comports())
             try:
@@ -20,6 +34,9 @@ class Myserial:
             except Exception:
                 logging.ERROR('There is not available COM')
                 raise
+
+        if baud not in {19200, 9600, 4800, 2400, 1200}:
+            logging.ERROR('Unknown baud: ' + str(baud))
 
         try:
             ser = serial.Serial(
@@ -72,11 +89,16 @@ class Myserial:
             self.terminator = ' ' + self.terminator
 
         self.answertime = answertime
-        self.logging_massage = logging_massage
+        self.logging_message = logging_message
 
-    def get_settings_from_file(self, file):
+    def get_settings_from_file(self, setupfile):
+        """
+        todo
+        :param setupfile:
+        :return:
+        """
         try:
-            open('settings_serial.txt')
+            open(setupfile)
         except Exception:
             logging.ERROR('There is not settings serial file')
             raise
@@ -87,34 +109,38 @@ class Myserial:
         assert not ser.isOpen()
         logging.INFO('Serial is close')
 
-    def write(self, massage):
+    def write(self, message: str):
         ser = self.ser
-        bmassage = (massage + self.terminator).encode('unf-8')
-        ser.write(bmassage)
-        if self.logging_massage:
-            logging.INFO(b'serial write: ' + bmassage)
+        bmessage = (message + self.terminator).encode('unf-8')
+        ser.write(bmessage)
+        if self.logging_message:
+            logging.INFO(b'serial write: ' + bmessage)
 
-    def write_readline(self, massage):
+    def write_readline(self, message: str):
         ser = self.ser
-        bmassage = (massage + self.terminator).encode('unf-8')
-        ser.write(bmassage)
-        if self.logging_massage:
-            logging.INFO(b'serial write: ' + bmassage)
+        bmessage = (message + self.terminator).encode('unf-8')
+        ser.write(bmessage)
+        if self.logging_message:
+            logging.INFO(b'serial write: ' + bmessage)
 
         time.sleep(self.answertime)
         answer = ser.readline()
-        if self.logging_massage:
+        if self.logging_message:
             logging.INFO(b'serial read: ' + answer)
 
         return answer.decode('uts-8').rstrip('\n')
 
-    def write_readlines(self, massage, N=False):
+    def write_readlines(self, message: str, N: int = 0):
+        """
+        :param N: int - number of lines if 0 - read while not empty lines
+        :return: list of str without '\n'
+        """
         ser = self.ser
-        logging_massage = self.logging_massage
-        bmassage = (massage + self.terminator).encode('unf-8')
-        ser.write(bmassage)
-        if logging_massage:
-            logging.INFO(b'serial write: ' + bmassage)
+        logging_message = self.logging_message
+        bmessage = (message + self.terminator).encode('unf-8')
+        ser.write(bmessage)
+        if logging_message:
+            logging.INFO(b'serial write: ' + bmessage)
 
         time.sleep(self.answertime)
 
@@ -122,7 +148,7 @@ class Myserial:
             answer = N * []
             for i in range(N):
                 answer[i] = ser.readline()
-                if logging_massage == 'all':
+                if logging_message == 'all':
                     logging.INFO(b'serial read: ' + answer[i])
                 answer[i].decode('utf-8').rstrip('\n')
         else:
@@ -130,7 +156,7 @@ class Myserial:
             answer = ''
             while flag:
                 buf = ser.readline()
-                if logging_massage == 'all':
+                if logging_message == 'all':
                     logging.INFO(b'serial read: ' + buf)
                 answer += buf
                 flag = len(buf)
@@ -141,10 +167,10 @@ class Myserial:
 
     def clear_input(self):
         ser = self.ser
-        logging_massage = self.logging_massage
+        logging_message = self.logging_message
         flag = 1
         while flag:
             buf = ser.readline()
-            if logging_massage == 'all':
+            if logging_message == 'all':
                 logging.INFO(b'serial read (clear_input): ' + buf)
             flag = len(buf)
