@@ -1,0 +1,13 @@
+INFO:root:Serial is open
+INFO:root:Serial is close
+INFO:root:Serial is open
+INFO:root:Serial is close
+INFO:root:Serial is open
+INFO:root:b'serial write: abc \n'
+INFO:root:Serial is close
+INFO:root:Serial is open
+INFO:root:b'serial write: aa \n'
+INFO:root:b'serial read: '
+INFO:root:b'serial read: '
+INFO:root:b'serial read: '
+INFO:root:Serial is close

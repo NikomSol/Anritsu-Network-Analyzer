@@ -4,11 +4,11 @@ import logging
 import time
 
 
-class MySerial:
+class Serial:
     def __init__(self, setup_file=False,
                  com=False, baud=9600, parity='NONE', stopbits=1, bytesize=8,
-                 timeout=0.1, answer_time=0.1,
                  terminator='LN', terminator_space=True,
+                 timeout=0.1, answer_time=0.1,
                  logging_message=True):
         """
         :param setup_file:  filename:str if use serial setup from file or False if setup from code
@@ -131,6 +131,8 @@ class MySerial:
             logging.error('Can not create message to write')
             self.close()
             raise
+
+        # self.clear_input()
         ser.write(bmessage)
         if self.logging_message:
             logging.info(b'serial write: ' + bmessage)
@@ -155,6 +157,8 @@ class MySerial:
             logging.error('Can not create message to write')
             self.close()
             raise
+
+        # self.clear_input()
         ser.write(bmessage)
         if logging_message:
             logging.info(b'serial write: ' + bmessage)
