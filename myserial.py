@@ -32,11 +32,11 @@ class MySerial:
             try:
                 com = coms[0][0]
             except Exception:
-                logging.ERROR('There is not available COM')
+                logging.error('There is not available COM')
                 raise
 
         if baud not in {19200, 9600, 4800, 2400, 1200}:
-            logging.ERROR('Unknown baud: ' + str(baud))
+            logging.error('Unknown baud: ' + str(baud))
 
         # GEO - really? Before setting all the settings as stopbits etc. ?
         try:
@@ -46,13 +46,13 @@ class MySerial:
                 timeout=timeout
             )
         except Exception:
-            logging.ERROR('Can not open serial')
+            logging.error('Can not open serial')
             raise
 
         if parity is 'NONE':
             ser.parity = serial.PARITY_NONE
         else:
-            logging.ERROR('Unknown parity: ' + str(parity))
+            logging.error('Unknown parity: ' + str(parity))
             raise ValueError
 
         if stopbits == 1:
@@ -60,7 +60,7 @@ class MySerial:
         elif stopbits == 2:
             ser.stopbits = serial.STOPBITS_TWO
         else:
-            logging.ERROR('Unknown stopbits: ' + str(stopbits))
+            logging.error('Unknown stopbits: ' + str(stopbits))
             raise ValueError
 
         if bytesize == 8:
@@ -68,11 +68,11 @@ class MySerial:
         elif bytesize == 7:
             ser.bytesize = serial.SEVENBITS
         else:
-            logging.ERROR('Unknown bytesize: ' + str(bytesize))
+            logging.error('Unknown bytesize: ' + str(bytesize))
             raise ValueError
 
         assert ser.isOpen()
-        logging.INFO('Serial is open')
+        logging.info('Serial is open')
         self.ser = ser
 
         if terminator == 'LN':
@@ -84,7 +84,7 @@ class MySerial:
         elif terminator == 'CRLN':
             self.terminator = '\n\r'
         else:
-            logging.ERROR('Unknown terminator: ' + str(terminator))
+            logging.error('Unknown terminator: ' + str(terminator))
             raise ValueError
 
         if terminator_space:
@@ -93,8 +93,7 @@ class MySerial:
         self.answer_time = answer_time
         self.logging_message = logging_message
 
-    # TODO parameters typing
-    def get_settings_from_file(self, setup_file):
+    def get_settings_from_file(self, setup_file: str) -> None:
         """
         TODO
         :param setup_file:
@@ -103,60 +102,71 @@ class MySerial:
         try:
             open(setup_file)
         except Exception:
-            logging.ERROR('There is not settings serial file')
+            logging.error('There is not settings serial file')
             raise
 
     def close(self) -> None:
         ser = self.ser
         ser.close()
         assert not ser.isOpen()
-        logging.INFO('Serial is close')
+        logging.info('Serial is close')
 
     def write(self, message: str) -> None:
         ser = self.ser
-        bmessage = (message + self.terminator).encode('unf-8')
+        try:
+            bmessage = (message + self.terminator).encode('utf-8')
+        except Exception:
+            logging.error('Can not create message to write')
+            self.close()
+            raise
         ser.write(bmessage)
         if self.logging_message:
-            logging.INFO(b'serial write: ' + bmessage)
+            logging.info(b'serial write: ' + bmessage)
 
-    # TODO return parameter typing == str?
-    def write_readline(self, message: str):
+    def write_readline(self, message: str) -> str:
         ser = self.ser
-        bmessage = (message + self.terminator).encode('unf-8')
+        try:
+            bmessage = (message + self.terminator).encode('utf-8')
+        except Exception:
+            logging.error('Can not create message to write')
+            self.close()
+            raise
         ser.write(bmessage)
         if self.logging_message:
-            logging.INFO(b'serial write: ' + bmessage)
+            logging.info(b'serial write: ' + bmessage)
 
         time.sleep(self.answer_time)
         answer = ser.readline()
         if self.logging_message:
-            logging.INFO(b'serial read: ' + answer)
+            logging.info(b'serial read: ' + answer)
 
-        return answer.decode('uts-8').rstrip('\n')
+        return answer.decode('utf-8').rstrip('\n')
 
-    # TODO return parameter typing == str?
-    # TODO argument names should be lowercase
-    def write_readlines(self, message: str, N: int = 0):
+    def write_readlines(self, message: str, lines_number: int = 0) -> list:
         """
-        :param message: TODO
-        :param N: int - number of lines if 0 - read while not empty lines
+        :param lines_number: int - number of lines if 0 - read while not empty lines
         :return: list of str without '\n'
         """
         ser = self.ser
         logging_message = self.logging_message
-        bmessage = (message + self.terminator).encode('unf-8')
+        try:
+            bmessage = (message + self.terminator).encode('utf-8')
+        except Exception:
+            logging.error('Can not create message to write')
+            self.close()
+            raise
         ser.write(bmessage)
         if logging_message:
-            logging.INFO(b'serial write: ' + bmessage)
+            logging.info(b'serial write: ' + bmessage)
 
         time.sleep(self.answer_time)
 
-        if N:
-            answer = N * []
-            for i in range(N):
+        if lines_number:
+            answer = lines_number * ['']
+            for i in range(lines_number):
                 answer[i] = ser.readline()
                 if logging_message == 'all':
-                    logging.INFO(b'serial read: ' + answer[i])
+                    logging.info(b'serial read: ' + answer[i])
                 answer[i].decode('utf-8').rstrip('\n')
         else:
             flag = 1
@@ -164,7 +174,7 @@ class MySerial:
             while flag:
                 buf = ser.readline()
                 if logging_message == 'all':
-                    logging.INFO(b'serial read: ' + buf)
+                    logging.info(b'serial read: ' + buf)
                 answer += buf
                 flag = len(buf)
             answer.decode('utf-8')
@@ -179,5 +189,5 @@ class MySerial:
         while flag:
             buf = ser.readline()
             if logging_message == 'all':
-                logging.INFO(b'serial read (clear_input): ' + buf)
+                logging.info(b'serial read (clear_input): ' + buf)
             flag = len(buf)

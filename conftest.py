@@ -1,0 +1,1 @@
+PYTHONPATH = "D:\Work\Programming\Anritsu Network Analyzer"

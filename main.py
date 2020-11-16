@@ -1,15 +1,12 @@
 import serial.tools.list_ports
 import serial
 import logging
-import time
 from anritsu import Anritsu
-import sys
+from myserial import MySerial
 
 
-def excepthook(*args):
-  logging.getLogger().error('Uncaught exception:', exc_info=args)
-
-
+# def excepthook(*args):
+#   logging.getLogger().error('Uncaught exception:', exc_info=args)
 logging.basicConfig(filename="INFO.log", level=logging.INFO, filemode='w')
 
 coms = list(serial.tools.list_ports.comports())
