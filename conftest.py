@@ -1,1 +1,3 @@
-PYTHONPATH = "D:\Work\Programming\Anritsu Network Analyzer"
+import pathlib
+
+PYTHONPATH = pathlib.Path.cwd()
