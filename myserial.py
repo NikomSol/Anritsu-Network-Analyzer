@@ -144,7 +144,7 @@ class Serial:
 
         return answer.decode('utf-8').rstrip('\n')
 
-    def write_readlines(self, message: str, lines_number: int = 0) -> list:
+    def write_readlines(self, message: str, lines_number: int = 0, float_data: bool = False) -> list:
         """
         :param lines_number: int - number of lines if 0 - read while not empty lines
         :return: list of str without '\n'
@@ -171,18 +171,21 @@ class Serial:
                 answer[i] = ser.readline()
                 if logging_message == 'all':
                     logging.info(b'serial read: ' + answer[i])
-                answer[i].decode('utf-8').rstrip('\n')
+                answer[i] = answer[i].decode('utf-8').rstrip('\n')
         else:
             flag = 1
-            answer = ''
+            answer = b''
             while flag:
                 buf = ser.readline()
                 if logging_message == 'all':
                     logging.info(b'serial read: ' + buf)
                 answer += buf
                 flag = len(buf)
-            answer.decode('utf-8')
-            answer.split('\n')
+            answer = answer.decode('utf-8')
+            answer = answer.split('\n')
+
+        if float_data:
+            answer = list(map(float, answer))
 
         return answer
 

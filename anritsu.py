@@ -18,6 +18,11 @@ class Network_Analyser:
                     12: 'REAL', 13: 'IMAG', 14: 'REAL & IMAG', 15: 'LOG Z', 16: 'LOG Z & θ', 17: 'Q', 18: 'LOG Z & Q'}
         self.MEASPT = {0: 'TB/TA', 1: 'TA/R', 2: 'TB/R', 3: 'TA', 4: 'TB', 5: 'R'}
 
+        _serial.clear_input()
+        if _serial.write_readline('ACCH?') == '':
+            logging.error('Can not connected to anritsy')
+            assert False
+
     def set_freq(self, start: int, stop: int, log: bool = True) -> None:
         ser = self.ser
 
@@ -92,7 +97,7 @@ class Network_Analyser:
             ser.write('MEASPT ' + str(ch1_meas))
             ser.write_readline('MEASPT?')
         if ch2_meas is not None:
-            ser.write('ACCH 1')
+            ser.write('ACCH 2')
             ser.write('MEASPT ' + str(ch2_meas))
             ser.write_readline('MEASPT?')
 
@@ -112,6 +117,7 @@ class Network_Analyser:
         ser = self.ser
         if mode is 'single':
             ser.write('SWP 1')
+            self.wait_sweep_stop()
         elif mode is 'repeat':
             ser.write('SWP 0')
         elif mode is 'stop':
@@ -121,34 +127,41 @@ class Network_Analyser:
 
     def auto_scale(self) -> None:
         ser = self.ser
-        ser.write('SAU')
+        for ch in range(2):
+            ser.write('ACCH ' + str(ch + 1))
+            for tr in range(2):
+                ser.write('ACTR ' + str(tr))
+                ser.write('SAU')
 
     def wait_sweep_stop(self) -> None:
+        # после запроса состояния свипа его штырит
         ser = self.ser
         flag = 1
         while flag:
             time.sleep(0.5)
             if ser.write_readline('SWP?') == '0':
                 flag = 0
+        ser.clear_input()
+        logging.info('Sweep end')
 
     def get_data(self, channel: 'str' = 'all', plot: bool = True, save: bool = True) -> None:
         """
         only single mode
         """
         ser = self.ser
-        self.wait_sweep_stop()
 
         N = self.get_meas_points()
 
         def one_channel_read(fq_collumn=True):
             if fq_collumn:
-                fq = ser.write_readlines('FQM? 0, ' + str(N))
-                mag = ser.write_readlines('XMA? 0, ' + str(N))
-                pha = ser.write_readlines('XMB? 0, ' + str(N))
+                fq = np.array(ser.write_readlines('FQM? 0, ' + str(N),N,float_data=True))
+                mag = np.array(ser.write_readlines('XMA? 0, ' + str(N),N,float_data=True))
+                pha = np.array(ser.write_readlines('XMB? 0, ' + str(N),N,float_data=True))
+                fq = np.array(list(map(float, fq)))
                 return fq, mag, pha
             else:
-                mag = ser.write_readlines('XMA? 0, ' + str(N))
-                pha = ser.write_readlines('XMB? 0, ' + str(N))
+                mag = np.array(ser.write_readlines('XMA? 0, ' + str(N),N,float_data=True))
+                pha = np.array(ser.write_readlines('XMB? 0, ' + str(N),N,float_data=True))
                 return mag, pha
 
         if channel is 'all':
@@ -177,13 +190,13 @@ class Network_Analyser:
             if (channel is 'ch1') or (channel is 'ch2'):
                 fig, axs = plt.subplots(nrows=1, ncols=2, sharex=True)
                 ax = axs[0]
-                ax.errorbar(dataChannel['fq'], dataChannel['mag'])
+                ax.plot(dataChannel['fq'], dataChannel['mag'])
                 ax.set_title('magnitude')
                 if log:
                     ax.set_xscale('log')
 
                 ax = axs[1]
-                ax.errorbar(dataChannel['fq'], dataChannel['pha'])
+                ax.plot(dataChannel['fq'], dataChannel['pha'])
                 ax.set_title('phase')
                 if log:
                     ax.set_xscale('log')
@@ -191,18 +204,18 @@ class Network_Analyser:
             elif channel is 'all':
                 fig, axs = plt.subplots(nrows=1, ncols=2, sharex=True)
                 ax = axs[0]
-                ax.errorbar(dataChannel['fq'], dataChannel['mag1'])
-                ax.errorbar(dataChannel['fq'], dataChannel['mag2'])
+                ax.plot(dataChannel['fq'], dataChannel['mag1'])
+                ax.plot(dataChannel['fq'], dataChannel['mag2'])
                 ax.set_title('magnitude')
                 if log:
                     ax.set_xscale('log')
 
                 ax = axs[1]
-                ax.errorbar(dataChannel['fq'], dataChannel['pha1'])
-                ax.errorbar(dataChannel['fq'], dataChannel['pha2'])
+                ax.plot(dataChannel['fq'], dataChannel['pha1'])
+                ax.plot(dataChannel['fq'], dataChannel['pha2'])
                 ax.set_title('phase')
                 if log:
                     ax.set_xscale('log')
 
-            fig.suptitle('data from ' + channel)
+            # fig.suptitle('data from ' + channel)
             plt.show()
